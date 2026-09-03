@@ -67,12 +67,12 @@ export async function loadAllFromDB() {
 // PERSIST — sync individual changes to Supabase
 // ============================================================
 
-export async function persistConversation(mode: string, projectId?: string) {
+export async function persistConversation(mode: string, projectId?: string, localId?: string) {
   try {
     const res = await fetch('/api/conversations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create', mode, projectId }),
+      body: JSON.stringify({ action: 'create', mode, projectId, id: localId }),
     });
     const data = await res.json();
     return data.conversation;
@@ -102,13 +102,13 @@ export async function persistDeleteConversation(id: string) {
   } catch {}
 }
 
-export async function persistMessage(conversationId: string, role: string, content: string, toolCalls?: unknown, sources?: unknown) {
+export async function persistMessage(conversationId: string, role: string, content: string, toolCalls?: unknown, sources?: unknown, localId?: string) {
   try {
     const resolvedId = resolveId(conversationId);
     const res = await fetch('/api/conversations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'add_message', conversationId: resolvedId, role, content, toolCalls, sources }),
+      body: JSON.stringify({ action: 'add_message', conversationId: resolvedId, role, content, toolCalls, sources, id: localId }),
     });
     const data = await res.json();
     return data.message;
@@ -119,10 +119,11 @@ export async function persistMessage(conversationId: string, role: string, conte
 
 export async function persistUpdateMessage(id: string, content: string, toolCalls?: unknown) {
   try {
+    const resolvedId = resolveId(id);
     await fetch('/api/conversations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update_message', id, content, toolCalls }),
+      body: JSON.stringify({ action: 'update_message', id: resolvedId, content, toolCalls }),
     });
   } catch {}
 }

@@ -118,11 +118,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       conversations: [conversation, ...state.conversations],
       activeConversationId: conversation.id,
     }));
-    // Persist to Supabase in background
-    persistConversation(mode, projectId).then((dbConvo) => {
+    // Persist to Supabase in background (send local UUID so the same ID is used everywhere)
+    persistConversation(mode, projectId, conversation.id).then((dbConvo) => {
       if (dbConvo) {
-        // Map local ID to Supabase ID so future messages resolve correctly
-        mapId(conversation.id, dbConvo.id);
+        // Map local ID to Supabase ID if Supabase assigned a different one
+        if (dbConvo.id !== conversation.id) mapId(conversation.id, dbConvo.id);
         set((state) => ({
           conversations: state.conversations.map((c) =>
             c.id === conversation.id ? { ...c, id: dbConvo.id } : c
@@ -160,7 +160,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     // Persist to Supabase (skip pending/empty messages)
     if (!msg.pending && msg.content) {
-      persistMessage(conversationId, msg.role, msg.content, msg.toolCalls, msg.sources);
+      persistMessage(conversationId, msg.role, msg.content, msg.toolCalls, msg.sources, message.id);
     }
     // Persist title update to Supabase
     if (newTitle) {

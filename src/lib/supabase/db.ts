@@ -46,10 +46,10 @@ export async function dbGetConversations(): Promise<Conversation[]> {
   return conversations;
 }
 
-export async function dbCreateConversation(mode: string, projectId?: string): Promise<Conversation> {
+export async function dbCreateConversation(mode: string, projectId?: string, id?: string): Promise<Conversation> {
   const { data, error } = await supabase()
     .from('conversations')
-    .insert({ title: 'New Conversation', mode, project_id: projectId })
+    .insert({ id: id || undefined, title: 'New Conversation', mode, project_id: projectId })
     .select()
     .single();
 
@@ -94,11 +94,13 @@ export async function dbAddMessage(msg: {
   content: string;
   toolCalls?: unknown;
   sources?: unknown;
+  id?: string;
 }): Promise<Message> {
   const insertMsg = async () => {
     return supabase()
       .from('messages')
       .insert({
+        id: msg.id || undefined,
         conversation_id: msg.conversationId,
         role: msg.role,
         content: msg.content,
@@ -138,6 +140,13 @@ export async function dbAddMessage(msg: {
 }
 
 export async function dbUpdateMessage(id: string, updates: { content?: string; toolCalls?: unknown; sources?: unknown }) {
+  // Validate UUID format before querying — prevents Postgres type errors
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    console.warn(`dbUpdateMessage: skipping — invalid UUID: ${id}`);
+    return;
+  }
+
   const { error } = await supabase()
     .from('messages')
     .update(updates)

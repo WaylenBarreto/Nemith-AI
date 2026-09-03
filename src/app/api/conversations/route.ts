@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     switch (action) {
       case 'create': {
-        const conversation = await dbCreateConversation(body.mode || 'chat', body.projectId);
+        const conversation = await dbCreateConversation(body.mode || 'chat', body.projectId, body.id);
         return Response.json({ conversation });
       }
 
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
           content: body.content,
           toolCalls: body.toolCalls,
           sources: body.sources,
+          id: body.id,
         });
         return Response.json({ message });
       }
