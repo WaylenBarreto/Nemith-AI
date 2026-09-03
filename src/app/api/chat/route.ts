@@ -2,8 +2,11 @@ import { NextRequest } from 'next/server';
 import { runAgent } from '@/lib/agent/core';
 
 export async function POST(req: NextRequest) {
+  const reqStart = Date.now();
+  console.log(`[API /chat] Request received`);
   try {
     const { message, conversationHistory, mode, projectId, model, temperature, maxTokens } = await req.json();
+    console.log(`[API /chat] Message: "${message.slice(0, 80)}${message.length > 80 ? '...' : ''}" — history: ${conversationHistory?.length || 0} msgs — model: ${model || 'default'}`);
 
     if (!message || typeof message !== 'string') {
       return Response.json({ error: 'Message is required' }, { status: 400 });
@@ -29,6 +32,7 @@ export async function POST(req: NextRequest) {
           }
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
+          console.log(`[API /chat] Stream complete in ${Date.now() - reqStart}ms`);
         } catch (error) {
           const errMsg = error instanceof Error ? error.message : 'Unknown error';
           controller.enqueue(

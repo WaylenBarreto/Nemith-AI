@@ -360,9 +360,18 @@ export default function ChatPage() {
     ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
   };
 
+  const processingRef = useRef(false);
+
   const handleSend = useCallback(async (text?: string) => {
     const content = text || input.trim();
     if (!content) return;
+
+    // Deduplication: prevent double-send
+    if (processingRef.current) {
+      console.log('[Chat] Blocked duplicate send');
+      return;
+    }
+    processingRef.current = true;
 
     let convoId = activeConversationId;
     if (!convoId) {
@@ -429,6 +438,7 @@ export default function ChatPage() {
       });
     }
 
+    processingRef.current = false;
     useAppStore.getState().setAgentStatus({ isProcessing: false, currentAction: undefined });
   }, [input, activeConversationId, chatMode, addMessage]);
 

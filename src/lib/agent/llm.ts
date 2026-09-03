@@ -3,9 +3,12 @@ import { ChatOpenAI } from '@langchain/openai';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openai/gpt-4o';
 
+let llmCallCount = 0;
+
 /**
  * Create a ChatOpenAI instance configured for OpenRouter.
- * OpenRouter is OpenAI-compatible, so we point the base URL there.
+ * maxRetries is set to 0 to prevent automatic retries on 429/5xx,
+ * which would triple the request count against OpenRouter's free-tier limit.
  */
 export function createLLM(options?: {
   model?: string;
@@ -19,11 +22,16 @@ export function createLLM(options?: {
     );
   }
 
+  const modelName = options?.model || OPENROUTER_MODEL;
+  llmCallCount++;
+  console.log(`[LLM] Call #${llmCallCount} — model: ${modelName}, temp: ${options?.temperature ?? 0.7}, maxTokens: ${options?.maxTokens ?? 4000}`);
+
   return new ChatOpenAI({
     apiKey: OPENROUTER_API_KEY,
-    modelName: options?.model || OPENROUTER_MODEL,
+    modelName,
     temperature: options?.temperature ?? 0.7,
     maxTokens: options?.maxTokens ?? 4000,
+    maxRetries: 0, // CRITICAL: prevent automatic retries on 429 rate limits
     configuration: {
       baseURL: 'https://openrouter.ai/api/v1',
       defaultHeaders: {
@@ -32,6 +40,20 @@ export function createLLM(options?: {
       },
     },
   });
+}
+
+/**
+ * Reset the call counter (for diagnostics).
+ */
+export function resetCallCount() {
+  llmCallCount = 0;
+}
+
+/**
+ * Get the current LLM call count.
+ */
+export function getCallCount() {
+  return llmCallCount;
 }
 
 /**
