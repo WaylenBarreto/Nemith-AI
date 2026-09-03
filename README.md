@@ -1,6 +1,10 @@
 # Nemith
 
 Personal AI Developer Workspace — an autonomous agent that chats, searches the web, reads GitHub repos, queries your documents, and manages tasks.
+<img width="1900" height="910" alt="image" src="https://github.com/user-attachments/assets/20b8a869-450c-4de2-9494-b9aedb3a3846" />
+<img width="1900" height="911" alt="image" src="https://github.com/user-attachments/assets/b30c7e5f-135f-4be3-9799-01e5f87c004d" />
+<img width="1905" height="912" alt="image" src="https://github.com/user-attachments/assets/501f25d2-725e-4887-b5b7-3b9804602d9f" />
+
 
 ## Quick Start
 
