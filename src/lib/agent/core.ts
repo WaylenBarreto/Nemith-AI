@@ -31,6 +31,9 @@ export interface AgentConfig {
   mode?: 'chat' | 'research' | 'project' | 'knowledge';
   projectId?: string;
   conversationHistory?: { role: string; content: string }[];
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 /**
@@ -40,18 +43,32 @@ export async function* runAgent(
   userMessage: string,
   config: AgentConfig = {}
 ) {
-  const llm = createLLM({ temperature: 0.7 });
+  const llm = createLLM({
+    model: config.model,
+    temperature: config.temperature ?? 0.7,
+    maxTokens: config.maxTokens ?? 4000,
+  });
   const tools = getAllTools();
   const llmWithTools = llm.bindTools(tools);
+  const TIMEOUT_MS = 30000; // 30s per LLM call
+
+  function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s. The model may be slow — try again or switch to a faster model in Settings.`)), ms)
+      ),
+    ]);
+  }
 
   // Build message history
   const messages: (SystemMessage | HumanMessage | AIMessage)[] = [
     new SystemMessage(SYSTEM_PROMPT),
   ];
 
-  // Add conversation history (last 20 messages for context window)
+  // Add conversation history (last 10 messages to reduce token overhead)
   if (config.conversationHistory) {
-    const recentHistory = config.conversationHistory.slice(-20);
+    const recentHistory = config.conversationHistory.slice(-10);
     for (const msg of recentHistory) {
       if (msg.role === 'user') {
         messages.push(new HumanMessage(msg.content));
@@ -66,7 +83,7 @@ export async function* runAgent(
 
   // Agent loop: call LLM, execute tools, repeat until final answer
   let iterations = 0;
-  const MAX_ITERATIONS = 10;
+  const MAX_ITERATIONS = 5;
 
   while (iterations < MAX_ITERATIONS) {
     iterations++;
@@ -74,7 +91,11 @@ export async function* runAgent(
     // Yield thinking status
     yield { type: 'status', content: 'Thinking...' };
 
-    const response = await llmWithTools.invoke(messages);
+    const response = await withTimeout(
+      llmWithTools.invoke(messages),
+      TIMEOUT_MS,
+      'LLM call'
+    );
 
     // If the model made tool calls, execute them
     if (response.tool_calls && response.tool_calls.length > 0) {
@@ -100,7 +121,11 @@ export async function* runAgent(
           yield { type: 'status', content: `Running ${tc.name}...` };
           try {
             const startTime = Date.now();
-            const result = await (toolInstance as any).invoke(tc.args);
+            const result = await withTimeout(
+              (toolInstance as any).invoke(tc.args),
+              15000,
+              `Tool ${tc.name}`
+            );
             const durationMs = Date.now() - startTime;
             const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
 

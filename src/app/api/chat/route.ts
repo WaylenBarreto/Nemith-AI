@@ -3,7 +3,7 @@ import { runAgent } from '@/lib/agent/core';
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, conversationHistory, mode, projectId } = await req.json();
+    const { message, conversationHistory, mode, projectId, model, temperature, maxTokens } = await req.json();
 
     if (!message || typeof message !== 'string') {
       return Response.json({ error: 'Message is required' }, { status: 400 });
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const event of runAgent(message, { mode, projectId, conversationHistory })) {
+          for await (const event of runAgent(message, { mode, projectId, conversationHistory, model, temperature, maxTokens })) {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
             );

@@ -16,6 +16,9 @@ export interface SendMessageOptions {
   conversationHistory?: { role: string; content: string }[];
   mode?: string;
   projectId?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
   onEvent: (event: ChatEvent) => void;
 }
 
@@ -30,10 +33,20 @@ export async function sendMessage({
   projectId,
   onEvent,
 }: SendMessageOptions): Promise<void> {
+  // Read settings from localStorage
+  let settings: Record<string, unknown> = {};
+  try {
+    const stored = localStorage.getItem('nemith_settings');
+    if (stored) settings = JSON.parse(stored);
+  } catch {}
+
+  const finalModel = (settings.model as string) || undefined;
+  const finalTemp = (settings.temperature as number) || undefined;
+  const finalMaxTokens = (settings.maxTokens as number) || undefined;
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, conversationHistory, mode, projectId }),
+    body: JSON.stringify({ message, conversationHistory, mode, projectId, model: finalModel, temperature: finalTemp, maxTokens: finalMaxTokens }),
   });
 
   if (!res.ok) {
