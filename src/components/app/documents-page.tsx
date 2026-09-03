@@ -51,15 +51,14 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 lg:p-8">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="mb-6">
           <h1 className="text-lg font-semibold text-white">Documents</h1>
           <p className="text-xs text-white/30 mt-0.5">Upload files for knowledge retrieval</p>
         </div>
 
-        {/* Drop zone */}
-        <div
+        {/* Drop zone */}          <div
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFiles(e.dataTransfer.files); }}

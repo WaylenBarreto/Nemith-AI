@@ -42,6 +42,19 @@ export default function Sidebar() {
   } = useAppStore();
 
   const [hoveredConvo, setHoveredConvo] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile and auto-close sidebar
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) setSidebarOpen(false);
+    };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [setSidebarOpen]);
 
   // Load all data from Supabase on mount (with localStorage fallback)
   useEffect(() => {
@@ -72,12 +85,27 @@ export default function Sidebar() {
     setActivePage('chat');
   };
 
+  // On mobile: fixed overlay with backdrop. On desktop: static sidebar.
   return (
+    <>
+    {/* Mobile backdrop */}
+    {isMobile && sidebarOpen && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+        onClick={() => setSidebarOpen(false)}
+      />
+    )}
     <motion.aside
       initial={false}
       animate={{ width: sidebarOpen ? 260 : 72 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="relative h-full bg-[#111111] border-r border-white/[0.06] flex flex-col shrink-0 overflow-hidden"
+      className={cn(
+        'h-full bg-[#111111] border-r border-white/[0.06] flex flex-col shrink-0 overflow-hidden',
+        isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'
+      )}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-16 shrink-0">
@@ -284,5 +312,6 @@ export default function Sidebar() {
         </div>
       </div>
     </motion.aside>
+    </>
   );
 }

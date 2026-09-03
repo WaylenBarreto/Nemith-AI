@@ -63,7 +63,7 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="sticky top-0 z-10 bg-black/60 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-6 lg:px-8 h-14">
+        <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 h-12 md:h-14 pl-14 md:pl-4">
           <h1 className="text-sm font-medium text-white">Settings</h1>
           <button
             onClick={handleSave}
@@ -80,7 +80,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="p-6 lg:p-8">
+      <div className="p-4 md:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto space-y-8">
 
           {/* Model Selection */}

@@ -265,6 +265,37 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
+/* Safe area for mobile notch/home indicator */
+.safe-area-inset {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mobile touch improvements */
+@media (max-width: 767px) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent text selection on mobile UI elements */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Smoother scrolling on iOS */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Smooth scroll snap for tasks on mobile */
+@media (max-width: 767px) {
+  .snap-x {
+    scroll-padding-left: 24px;
+  }
+}
+
 /* Tool badge styles */
 .tool-badge {
   display: inline-flex;

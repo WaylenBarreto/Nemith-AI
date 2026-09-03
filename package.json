@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@langchain/community": "^1.1.29",
     "@langchain/core": "^1.2.9",
     "@langchain/openai": "^1.5.11",
     "@react-three/drei": "^10.7.8",
@@ -18,7 +17,6 @@
     "@supabase/supabase-js": "^2.114.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/three": "^0.185.4",
-    "ai": "^7.0.90",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "framer-motion": "^13.1.1",

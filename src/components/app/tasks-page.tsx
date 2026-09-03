@@ -56,11 +56,11 @@ export default function TasksPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="flex gap-3 overflow-x-auto pb-4 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible -mx-6 px-6 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none">
           {columns.map((col) => {
             const colTasks = tasks.filter((t) => t.status === col.id);
             return (
-              <div key={col.id}>
+              <div key={col.id} className="min-w-[260px] md:min-w-0 snap-start">
                 <div className="flex items-center gap-2 px-1 mb-3">
                   <col.icon className="w-3.5 h-3.5 text-white/30" />
                   <span className="text-xs font-medium text-white/60">{col.label}</span>

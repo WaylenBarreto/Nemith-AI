@@ -52,8 +52,8 @@ export default function DashboardPage() {
     <div className="flex-1 overflow-y-auto">
       {/* Top bar */}
       <div className="sticky top-0 z-10 bg-black/60 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-6 lg:px-8 h-14">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-white/30 text-sm w-full max-w-xs">
+        <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 h-12 md:h-14 pl-14 md:pl-6 lg:pl-8">
+          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-white/30 text-sm w-full max-w-xs">
             <Search className="w-3.5 h-3.5" />
             <span>Search anything...</span>
             <span className="ml-auto flex items-center gap-0.5 text-[10px] font-mono border border-white/10 rounded-md px-1.5 py-0.5">⌘F</span>
@@ -61,7 +61,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="p-6 lg:p-8">
+      <div className="p-4 md:p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Greeting */}
           <motion.div
@@ -76,7 +76,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-6">
             {stats.map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -95,7 +95,7 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-3">
             {/* Main card - Balance style (Payflow inspired) */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}

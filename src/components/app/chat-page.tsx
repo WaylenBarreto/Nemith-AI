@@ -218,7 +218,7 @@ function MessageBubble({ message }: { message: Message }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={cn('flex gap-3 px-6', isUser ? 'justify-end' : 'justify-start')}
+      className={cn('flex gap-3 px-4 md:px-6', isUser ? 'justify-end' : 'justify-start')}
     >
       {!isUser && (
         <div className="w-7 h-7 rounded-lg bg-white/[0.08] border border-white/[0.06] flex items-center justify-center shrink-0 mt-1">
@@ -309,7 +309,7 @@ function EmptyState({ onStart }: { onStart: (text: string) => void }) {
   ];
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6">
+    <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-6">
       <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-5">
         <Bot className="w-6 h-6 text-white/30" />
       </div>
@@ -317,7 +317,7 @@ function EmptyState({ onStart }: { onStart: (text: string) => void }) {
       <p className="text-sm text-white/30 mb-8 text-center max-w-md">
         Write code, research topics, manage projects, and work with documents.
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full px-2">
         {suggestions.map((s) => (
           <button
             key={s}
@@ -466,25 +466,25 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 h-14 border-b border-white/[0.06] shrink-0">
-        <div className="flex items-center gap-3">
-          <h1 className="text-sm font-medium text-white">
+      <div className="flex items-center justify-between px-4 md:px-6 h-12 md:h-14 border-b border-white/[0.06] shrink-0">
+        <div className="flex items-center gap-3 min-w-0 pl-10 md:pl-0">
+          <h1 className="text-sm font-medium text-white truncate">
             {conversation?.title || 'New Chat'}
           </h1>
           {agentStatus.isProcessing && (
-            <div className="flex items-center gap-1.5 text-xs text-white/50">
+            <div className="flex items-center gap-1.5 text-xs text-white/50 shrink-0">
               <Loader2 className="w-3 h-3 animate-spin" />
-              {agentStatus.currentAction || 'Processing...'}
+              <span className="hidden sm:inline">{agentStatus.currentAction || 'Processing...'}</span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           {/* Export button */}
           {messages.length > 0 && (
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+              className="flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-lg text-xs text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all"
               title="Export as Markdown"
             >
               <Download className="w-3 h-3" />
@@ -499,14 +499,14 @@ export default function ChatPage() {
                 key={mode.id}
                 onClick={() => setChatMode(mode.id)}
                 className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
+                  'flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all',
                   chatMode === mode.id
                     ? 'bg-white/[0.08] text-white'
                     : 'text-white/25 hover:text-white/50'
                 )}
               >
                 <mode.icon className="w-3 h-3" />
-                <span className="hidden sm:inline">{mode.label}</span>
+                <span className="hidden md:inline">{mode.label}</span>
               </button>
             ))}
           </div>
@@ -516,7 +516,7 @@ export default function ChatPage() {
       {messages.length === 0 ? (
         <EmptyState onStart={handleSend} />
       ) : (
-        <div className="flex-1 overflow-y-auto py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto py-4 md:py-6 space-y-4 md:space-y-6">
           {messages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />
           ))}
@@ -525,7 +525,7 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="px-4 sm:px-6 pb-5 pt-3">
+      <div className="px-3 sm:px-4 md:px-6 pb-4 md:pb-5 pt-2 md:pt-3 safe-area-inset">
         <div className="max-w-3xl mx-auto">
           <div className="relative bg-[#161616] border border-white/[0.08] rounded-2xl focus-within:border-white/[0.15] transition-colors shadow-lg shadow-black/40">
             <textarea
@@ -535,7 +535,7 @@ export default function ChatPage() {
               onKeyDown={handleKeyDown}
               placeholder="Ask anything..."
               rows={1}
-              className="w-full bg-transparent text-sm text-white placeholder:text-white/20 outline-none resize-none max-h-40 pl-4 pr-14 py-3.5"
+              className="w-full bg-transparent text-sm text-white placeholder:text-white/20 outline-none resize-none max-h-40 pl-4 pr-14 py-3.5 min-h-[44px]"
             />
             <button
               onClick={() => handleSend()}

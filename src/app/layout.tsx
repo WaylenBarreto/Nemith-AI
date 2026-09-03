@@ -13,6 +13,13 @@ export const metadata: Metadata = {
     "We build intelligent software, design systems, and full-stack products for AI startups and technology companies.",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover' as const,
+  maximumScale: 1,
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased dark`}>
