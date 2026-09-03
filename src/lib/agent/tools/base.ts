@@ -8,6 +8,9 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 const PROJECT_ROOT = process.cwd();
 
+/** Detect if running on Vercel serverless (ephemeral filesystem) */
+const IS_SERVERLESS = !!process.env.VERCEL;
+
 /** Resolve and validate a path is within the project directory */
 function safePath(userPath: string): string {
   const resolved = join(PROJECT_ROOT, userPath);
@@ -28,6 +31,7 @@ function formatSize(bytes: number): string {
 // --- Read File (real) ---
 export const readFileTool = tool(
   async ({ path: userPath }) => {
+    if (IS_SERVERLESS) return 'Filesystem tools are not available in the cloud deployment. This feature works locally but not on Vercel.';
     try {
       const fullPath = safePath(userPath);
       const content = await readFile(fullPath, 'utf-8');
@@ -54,6 +58,7 @@ export const readFileTool = tool(
 // --- Write File (real) ---
 export const writeFileTool = tool(
   async ({ path: userPath, content }) => {
+    if (IS_SERVERLESS) return 'Filesystem tools are not available in the cloud deployment. This feature works locally but not on Vercel.';
     try {
       const fullPath = safePath(userPath);
       await writeFile(fullPath, content, 'utf-8');
@@ -75,6 +80,7 @@ export const writeFileTool = tool(
 // --- List Directory (real) ---
 export const listDirectoryTool = tool(
   async ({ path: userPath }) => {
+    if (IS_SERVERLESS) return 'Filesystem tools are not available in the cloud deployment. This feature works locally but not on Vercel.';
     try {
       const fullPath = safePath(userPath || '.');
       const entries = await readdir(fullPath, { withFileTypes: true });
@@ -116,6 +122,7 @@ export const listDirectoryTool = tool(
 // --- Run Terminal (real, sandboxed) ---
 export const runTerminalTool = tool(
   async ({ command }) => {
+    if (IS_SERVERLESS) return 'Terminal commands are not available in the cloud deployment. This feature works locally but not on Vercel.';
     const blocked = ['rm -rf /', 'sudo ', 'chmod 777', 'mkfs', 'dd if=', ':(){ :|:& };:'];
     if (blocked.some((b) => command.toLowerCase().includes(b))) {
       return 'Command blocked for safety reasons.';
