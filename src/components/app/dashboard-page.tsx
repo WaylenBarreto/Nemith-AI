@@ -187,7 +187,7 @@ export default function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-white truncate">{doc.filename}</p>
                           <p className="text-[11px] text-white/25 mt-0.5">
-                            {doc.status === 'ready' ? 'Ready' : 'Processing'} · {doc.fileType.toUpperCase()}
+                            {doc.status === 'ready' ? 'Ready' : 'Processing'} · {(doc.fileType || 'file').toUpperCase()}
                           </p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-white/15" />

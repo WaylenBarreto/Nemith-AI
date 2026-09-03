@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
+import { loadAllFromDB } from '@/lib/supabase/sync';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -42,43 +43,24 @@ export default function Sidebar() {
 
   const [hoveredConvo, setHoveredConvo] = useState<string | null>(null);
 
-  // Load conversations from localStorage on mount
+  // Load all data from Supabase on mount (with localStorage fallback)
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('nemith_conversations');
-      if (stored) {
-        const savedConversations = JSON.parse(stored);
-        if (savedConversations.length > 0) {
-          useAppStore.setState({ conversations: savedConversations });
-        }
-      }
-    } catch {}
+    loadAllFromDB().catch(() => {
+      // Fallback to localStorage if Supabase is not configured
+      try {
+        const stored = localStorage.getItem('nemith_conversations');
+        if (stored) useAppStore.setState({ conversations: JSON.parse(stored) });
+        const memStored = localStorage.getItem('nemith_memories');
+        if (memStored) useAppStore.setState({ memories: JSON.parse(memStored) });
+      } catch {}
+    });
   }, []);
 
-  // Persist conversations to localStorage
+  // Persist to localStorage as fallback when Supabase is not configured
   useEffect(() => {
     const unsub = useAppStore.subscribe((state) => {
       try {
         localStorage.setItem('nemith_conversations', JSON.stringify(state.conversations));
-      } catch {}
-    });
-    return unsub;
-  }, []);
-
-  // Load memories from localStorage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('nemith_memories');
-      if (stored) {
-        useAppStore.setState({ memories: JSON.parse(stored) });
-      }
-    } catch {}
-  }, []);
-
-  // Persist memories to localStorage
-  useEffect(() => {
-    const unsub = useAppStore.subscribe((state) => {
-      try {
         localStorage.setItem('nemith_memories', JSON.stringify(state.memories));
       } catch {}
     });

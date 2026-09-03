@@ -21,6 +21,7 @@ export interface SendMessageOptions {
 
 /**
  * Send a message to the agent and stream events back.
+ * Throws on errors so the caller can display them.
  */
 export async function sendMessage({
   message,
@@ -37,18 +38,18 @@ export async function sendMessage({
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: 'Request failed' }));
-    onEvent({ type: 'error', content: error.error || `HTTP ${res.status}` });
-    return;
+    throw new Error(error.error || `HTTP ${res.status}`);
   }
 
   const reader = res.body?.getReader();
   if (!reader) {
-    onEvent({ type: 'error', content: 'No response body' });
-    return;
+    throw new Error('No response body');
   }
 
   const decoder = new TextDecoder();
   let buffer = '';
+  let hasError = false;
+  let errorContent = '';
 
   while (true) {
     const { done, value } = await reader.read();
@@ -70,11 +71,23 @@ export async function sendMessage({
 
       try {
         const event: ChatEvent = JSON.parse(data);
+
+        // Track errors — show them to the user
+        if (event.type === 'error') {
+          hasError = true;
+          errorContent = event.content || 'Unknown error';
+        }
+
         onEvent(event);
       } catch {
         // Skip malformed JSON
       }
     }
+  }
+
+  // If we got error events but no text response, throw so the UI shows it
+  if (hasError && !errorContent.includes('[DONE]')) {
+    throw new Error(errorContent);
   }
 
   onEvent({ type: 'done' });

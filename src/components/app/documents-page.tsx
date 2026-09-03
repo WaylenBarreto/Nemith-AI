@@ -18,12 +18,18 @@ const fileTypeIcons = { pdf: FileText, txt: File, md: FileCode, docx: FileText }
 export default function DocumentsPage() {
   const { documents, addDocument, deleteDocument } = useAppStore();
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
+    setUploadError(null);
     for (const file of Array.from(files)) {
       const ext = file.name.split('.').pop()?.toLowerCase() as 'pdf' | 'txt' | 'md' | 'docx';
+      if (!['pdf', 'txt', 'md', 'docx'].includes(ext || '')) {
+        setUploadError(`Unsupported file type: .${ext}`);
+        continue;
+      }
       const doc = addDocument({ filename: file.name, fileType: ext || 'txt', fileSize: file.size });
       try {
         const formData = new FormData();
@@ -35,9 +41,11 @@ export default function DocumentsPage() {
           useAppStore.getState().updateDocument(doc.id, { status: 'ready', chunkCount: data.chunkCount });
         } else {
           useAppStore.getState().updateDocument(doc.id, { status: 'error' });
+          setUploadError(data.error || 'Upload failed');
         }
-      } catch {
+      } catch (e) {
         useAppStore.getState().updateDocument(doc.id, { status: 'error' });
+        setUploadError(e instanceof Error ? e.message : 'Network error');
       }
     }
   };
@@ -67,6 +75,16 @@ export default function DocumentsPage() {
           <p className="text-xs text-white/15">PDF, TXT, Markdown, DOCX</p>
         </div>
 
+        {uploadError && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <p className="text-xs text-red-400">{uploadError}</p>
+            <button onClick={() => setUploadError(null)} className="ml-auto text-red-400/50 hover:text-red-400">
+              <span className="text-xs">dismiss</span>
+            </button>
+          </div>
+        )}
+
         {documents.length === 0 ? (
           <div className="text-center py-16">
             <FileText className="w-8 h-8 text-white/10 mx-auto mb-2" />
@@ -76,7 +94,7 @@ export default function DocumentsPage() {
           <div className="space-y-1.5">
             <AnimatePresence>
               {documents.map((doc, i) => {
-                const FileIcon = fileTypeIcons[doc.fileType] || File;
+                const FileIcon = fileTypeIcons[doc.fileType as keyof typeof fileTypeIcons] || File;
                 return (
                   <motion.div
                     key={doc.id}
@@ -92,7 +110,7 @@ export default function DocumentsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-white truncate">{doc.filename}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-white/20 uppercase">{doc.fileType}</span>
+                        <span className="text-[10px] text-white/20 uppercase">{doc.fileType || 'file'}</span>
                         <span className="text-[10px] text-white/10">·</span>
                         <span className="text-[10px] text-white/20">{formatSize(doc.fileSize)}</span>
                         {doc.chunkCount > 0 && (

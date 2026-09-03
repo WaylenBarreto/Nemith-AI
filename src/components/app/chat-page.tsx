@@ -241,10 +241,11 @@ function MessageBubble({ message }: { message: Message }) {
             <div className={message.pending ? 'animate-pulse' : ''}>
               <MarkdownContent content={message.content || (message.pending ? '' : 'No response.')} />
               {message.pending && !message.content && (
-                <div className="flex items-center gap-1 py-1">
+                <div className="flex items-center gap-1.5 py-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-1.5 h-1.5 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: '150ms' }} />
                   <span className="w-1.5 h-1.5 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="text-xs text-white/25 ml-1">Thinking...</span>
                 </div>
               )}
             </div>
@@ -411,7 +412,7 @@ export default function ChatPage() {
               toolCalls: toolCallsList.length > 0 ? toolCallsList : undefined,
             });
           } else if (event.type === 'error') {
-            fullText += event.content ? `\n\nError: ${event.content}` : '';
+            fullText = event.content ? `Error: ${event.content}` : 'Unknown error occurred';
           }
         },
       });
@@ -520,25 +521,6 @@ export default function ChatPage() {
             <MessageBubble key={msg.id} message={msg} />
           ))}
           <div ref={messagesEndRef} />
-        </div>
-      )}
-
-      {/* Thinking indicator */}
-      {agentStatus.isProcessing && (
-        <div className="px-6 pb-2">
-          <div className="flex gap-3 max-w-3xl mx-auto">
-            <div className="w-7 h-7 rounded-lg bg-white/[0.08] border border-white/[0.06] flex items-center justify-center shrink-0">
-              <Bot className="w-3.5 h-3.5 text-white/60" />
-            </div>
-            <div className="bg-[#111] border border-white/[0.06] rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-              <span className="text-xs text-white/25 ml-1">{agentStatus.currentAction || 'Thinking...'}</span>
-            </div>
-          </div>
         </div>
       )}
 

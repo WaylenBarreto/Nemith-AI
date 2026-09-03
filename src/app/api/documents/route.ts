@@ -1,10 +1,45 @@
 import { NextRequest } from 'next/server';
 import { extractText } from '@/lib/rag/extractor';
 import { chunkText } from '@/lib/rag/chunker';
-import { addChunk, clearDocument } from '@/lib/rag/store';
+import { addChunk, clearDocument, registerDocument, updateDocumentChunkCount, getAllDocuments, getDocument, findDocumentByFilename } from '@/lib/rag/store';
+import { dbGetDocuments, dbCreateDocument, dbUpdateDocument, dbDeleteDocument } from '@/lib/supabase/db';
 
 export async function POST(req: NextRequest) {
   try {
+    const contentType = req.headers.get('content-type') || '';
+
+    // Handle JSON requests (DB operations)
+    if (contentType.includes('application/json')) {
+      const body = await req.json();
+      const { action } = body;
+
+      switch (action) {
+        case 'create_db': {
+          const doc = await dbCreateDocument({
+            filename: body.filename,
+            fileType: body.fileType,
+            fileSize: body.fileSize,
+            projectId: body.projectId,
+          });
+          return Response.json({ document: doc });
+        }
+
+        case 'update': {
+          await dbUpdateDocument(body.id, { status: body.status, chunkCount: body.chunkCount });
+          return Response.json({ success: true });
+        }
+
+        case 'delete': {
+          await dbDeleteDocument(body.id);
+          return Response.json({ success: true });
+        }
+
+        default:
+          return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });
+      }
+    }
+
+    // Handle FormData requests (file upload + RAG)
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const documentId = formData.get('documentId') as string | null;
@@ -30,19 +65,43 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'No text could be extracted from the file' }, { status: 400 });
     }
 
+    // Check for duplicate by filename
+    const existing = findDocumentByFilename(file.name);
+    if (existing && existing.id !== documentId) {
+      // Clear old chunks and re-register
+      clearDocument(existing.id);
+    }
+
+    // Register document metadata (handles sanitization + deduplication)
+    const meta = registerDocument({
+      id: documentId,
+      filename: file.name,
+      fileSize: file.size,
+    });
+
     // Clear any existing chunks for this document
     clearDocument(documentId);
+    // Re-register after clear (clearDocument deletes metadata)
+    const finalMeta = registerDocument({
+      id: documentId,
+      filename: file.name,
+      fileSize: file.size,
+    });
 
     // Chunk and store
     const chunks = chunkText(text);
     for (const chunk of chunks) {
-      addChunk(documentId, file.name, chunk.content, chunk.index);
+      addChunk(documentId, finalMeta.filename, chunk.content, chunk.index);
     }
+
+    // Update chunk count in metadata
+    updateDocumentChunkCount(documentId, chunks.length);
 
     return Response.json({
       success: true,
       documentId,
-      filename: file.name,
+      filename: finalMeta.filename,
+      originalFilename: finalMeta.originalFilename,
       fileType: ext,
       fileSize: file.size,
       chunkCount: chunks.length,
@@ -57,11 +116,30 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const { getDocumentIds, getChunkCount, getTotalChunks } = await import('@/lib/rag/store');
-  const docIds = getDocumentIds();
-  return Response.json({
-    documentCount: docIds.length,
-    totalChunks: getTotalChunks(),
-    documents: docIds.map((id) => ({ id, chunks: getChunkCount(id) })),
-  });
+  try {
+    // Try Supabase first, fall back to in-memory store
+    try {
+      const documents = await dbGetDocuments();
+      return Response.json({ documents });
+    } catch {
+      // Supabase not configured, use in-memory store
+      const allDocs = getAllDocuments();
+      return Response.json({
+        documents: allDocs.map((doc) => ({
+          id: doc.id,
+          filename: doc.filename,
+          fileType: doc.filename.split('.').pop() || 'txt',
+          fileSize: doc.fileSize,
+          chunkCount: doc.chunkCount,
+          uploadedAt: doc.uploadedAt,
+          status: 'ready',
+        })),
+      });
+    }
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : 'Failed to load documents' },
+      { status: 500 }
+    );
+  }
 }

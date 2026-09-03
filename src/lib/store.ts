@@ -12,9 +12,27 @@ import type {
   ResearchProgress,
 } from './types';
 import { generateId } from './utils';
+import {
+  persistConversation,
+  persistConversationTitle,
+  persistDeleteConversation,
+  persistMessage,
+  persistUpdateMessage,
+  persistProject,
+  persistUpdateProject,
+  persistDeleteProject,
+  persistUpdateDocument,
+  persistDeleteDocument,
+  persistTask,
+  persistUpdateTask,
+  persistDeleteTask,
+  persistMemory,
+  persistDeleteMemory,
+  mapId,
+} from './supabase/sync';
 
 // ============================================================
-// App Store — Central state management
+// App Store — Central state management with Supabase persistence
 // ============================================================
 
 interface AppState {
@@ -100,6 +118,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       conversations: [conversation, ...state.conversations],
       activeConversationId: conversation.id,
     }));
+    // Persist to Supabase in background
+    persistConversation(mode, projectId).then((dbConvo) => {
+      if (dbConvo) {
+        // Map local ID to Supabase ID so future messages resolve correctly
+        mapId(conversation.id, dbConvo.id);
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversation.id ? { ...c, id: dbConvo.id } : c
+          ),
+          activeConversationId: state.activeConversationId === conversation.id ? dbConvo.id : state.activeConversationId,
+        }));
+      }
+    });
     return conversation;
   },
 
@@ -110,21 +141,31 @@ export const useAppStore = create<AppState>((set, get) => ({
       conversationId,
       createdAt: new Date().toISOString(),
     };
+    let newTitle: string | undefined;
     set((state) => ({
-      conversations: state.conversations.map((c) =>
-        c.id === conversationId
-          ? {
-              ...c,
-              messages: [...c.messages, message],
-              updatedAt: new Date().toISOString(),
-              title:
-                c.messages.length === 0 && msg.role === 'user'
-                  ? msg.content.slice(0, 50) + (msg.content.length > 50 ? '…' : '')
-                  : c.title,
-            }
-          : c
-      ),
+      conversations: state.conversations.map((c) => {
+        if (c.id !== conversationId) return c;
+        const title =
+          c.messages.length === 0 && msg.role === 'user'
+            ? msg.content.slice(0, 50) + (msg.content.length > 50 ? '…' : '')
+            : c.title;
+        if (title !== c.title) newTitle = title;
+        return {
+          ...c,
+          messages: [...c.messages, message],
+          updatedAt: new Date().toISOString(),
+          title,
+        };
+      }),
     }));
+    // Persist to Supabase (skip pending/empty messages)
+    if (!msg.pending && msg.content) {
+      persistMessage(conversationId, msg.role, msg.content, msg.toolCalls, msg.sources);
+    }
+    // Persist title update to Supabase
+    if (newTitle) {
+      persistConversationTitle(conversationId, newTitle);
+    }
     return message;
   },
 
@@ -141,6 +182,10 @@ export const useAppStore = create<AppState>((set, get) => ({
           : c
       ),
     }));
+    // Persist final message to Supabase (skip streaming updates)
+    if (updates.content !== undefined && !updates.pending) {
+      persistUpdateMessage(messageId, updates.content, updates.toolCalls);
+    }
   },
 
   deleteConversation: (id) => {
@@ -149,6 +194,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       activeConversationId:
         state.activeConversationId === id ? null : state.activeConversationId,
     }));
+    persistDeleteConversation(id);
   },
 
   // --- Agent ---
@@ -178,6 +224,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     set((state) => ({ projects: [...state.projects, p] }));
+    // Persist to Supabase
+    persistProject(project.name, project.description, project.githubRepo).then((dbProject) => {
+      if (dbProject) {
+        mapId(p.id, dbProject.id);
+        set((state) => ({
+          projects: state.projects.map((proj) =>
+            proj.id === p.id ? { ...proj, id: dbProject.id } : proj
+          ),
+        }));
+      }
+    });
     return p;
   },
 
@@ -187,6 +244,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
       ),
     }));
+    persistUpdateProject(id, updates as { name?: string; description?: string; githubRepo?: string });
   },
 
   deleteProject: (id) => {
@@ -194,6 +252,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       projects: state.projects.filter((p) => p.id !== id),
       activeProjectId: state.activeProjectId === id ? null : state.activeProjectId,
     }));
+    persistDeleteProject(id);
   },
 
   // --- Documents ---
@@ -217,12 +276,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         d.id === id ? { ...d, ...updates } : d
       ),
     }));
+    persistUpdateDocument(id, { status: updates.status, chunkCount: updates.chunkCount });
   },
 
   deleteDocument: (id) => {
     set((state) => ({
       documents: state.documents.filter((d) => d.id !== id),
     }));
+    persistDeleteDocument(id);
   },
 
   // --- Tasks ---
@@ -236,6 +297,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     set((state) => ({ tasks: [...state.tasks, t] }));
+    // Persist to Supabase
+    persistTask({
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      status: task.status,
+      projectId: task.projectId,
+    }).then((dbTask) => {
+      if (dbTask) {
+        mapId(t.id, dbTask.id);
+        set((state) => ({
+          tasks: state.tasks.map((tt) =>
+            tt.id === t.id ? { ...tt, id: dbTask.id } : tt
+          ),
+        }));
+      }
+    });
     return t;
   },
 
@@ -252,12 +330,14 @@ export const useAppStore = create<AppState>((set, get) => ({
           : t
       ),
     }));
+    persistUpdateTask(id, updates as { title?: string; description?: string; priority?: string; status?: string });
   },
 
   deleteTask: (id) => {
     set((state) => ({
       tasks: state.tasks.filter((t) => t.id !== id),
     }));
+    persistDeleteTask(id);
   },
 
   // --- Memories ---
@@ -271,6 +351,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       lastAccessedAt: new Date().toISOString(),
     };
     set((state) => ({ memories: [...state.memories, m] }));
+    // Persist to Supabase
+    persistMemory(memory.content, memory.type, memory.importance).then((dbMemory) => {
+      if (dbMemory) {
+        mapId(m.id, dbMemory.id);
+        set((state) => ({
+          memories: state.memories.map((mm) =>
+            mm.id === m.id ? { ...mm, id: dbMemory.id } : mm
+          ),
+        }));
+      }
+    });
     return m;
   },
 
@@ -278,6 +369,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({
       memories: state.memories.filter((m) => m.id !== id),
     }));
+    persistDeleteMemory(id);
   },
 
   // --- Research ---
