@@ -15,6 +15,7 @@ import {
   PanelLeft,
   Search,
   Settings,
+  Swords,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
@@ -23,6 +24,7 @@ import { loadAllFromDB } from '@/lib/supabase/sync';
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
+  { id: 'war-room', label: 'War Room', icon: Swords },
   { id: 'projects', label: 'Projects', icon: FolderKanban },
   { id: 'documents', label: 'Documents', icon: FileText },
   { id: 'tasks', label: 'Tasks', icon: CheckSquare },

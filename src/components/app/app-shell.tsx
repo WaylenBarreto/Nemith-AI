@@ -7,6 +7,7 @@ import { useAppStore } from '@/lib/store';
 import Sidebar from './sidebar';
 import DashboardPage from './dashboard-page';
 import ChatPage from './chat-page';
+import WarRoomPage from './war-room-page';
 import ProjectsPage from './projects-page';
 import DocumentsPage from './documents-page';
 import TasksPage from './tasks-page';
@@ -17,6 +18,7 @@ const AppBackground = dynamic(() => import('./app-background'), { ssr: false });
 const pages: Record<string, React.ComponentType> = {
   dashboard: DashboardPage,
   chat: ChatPage,
+  'war-room': WarRoomPage,
   projects: ProjectsPage,
   documents: DocumentsPage,
   tasks: TasksPage,

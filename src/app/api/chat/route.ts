@@ -12,10 +12,10 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    // Check for API key
-    if (!process.env.OPENROUTER_API_KEY) {
+    // Check for API keys (OpenRouter primary, Gemini fallback)
+    if (!process.env.OPENROUTER_API_KEY && !process.env.GEMINI_API_KEY) {
       return Response.json(
-        { error: 'OpenRouter API key not configured. Set OPENROUTER_API_KEY in .env.local' },
+        { error: 'No API key configured. Set OPENROUTER_API_KEY or GEMINI_API_KEY in .env.local' },
         { status: 500 }
       );
     }

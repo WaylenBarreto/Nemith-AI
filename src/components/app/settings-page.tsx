@@ -2,37 +2,39 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Key, Cpu, Thermometer, Hash, Save, Check, ExternalLink } from 'lucide-react';
+import { Settings, Key, Cpu, Thermometer, Save, Check, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SettingsData {
-  model: string;
+  openrouterKey: string;
+  openrouterModel: string;
+  geminiKey: string;
+  geminiModel: string;
   temperature: number;
   maxTokens: number;
-  openrouterKey: string;
   serperKey: string;
   githubToken: string;
 }
 
 const defaultSettings: SettingsData = {
-  model: 'minimax/minimax-m3:free',
+  openrouterKey: '',
+  openrouterModel: 'openai/gpt-4o-mini',
+  geminiKey: '',
+  geminiModel: 'gemini-3.8-flash',
   temperature: 0.7,
   maxTokens: 4000,
-  openrouterKey: '',
   serperKey: '',
   githubToken: '',
 };
 
-const popularModels = [
-  { id: 'minimax/minimax-m3:free', name: 'MiniMax M3 (Free)', provider: 'MiniMax' },
-  { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
-  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' },
-  { id: 'anthropic/claude-sonnet-4', name: 'Claude Sonnet 4', provider: 'Anthropic' },
-  { id: 'anthropic/claude-3.5-haiku', name: 'Claude 3.5 Haiku', provider: 'Anthropic' },
-  { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash', provider: 'Google' },
-  { id: 'meta-llama/llama-3.1-405b-instruct', name: 'Llama 3.1 405B', provider: 'Meta' },
-  { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat', provider: 'DeepSeek' },
-  { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'Qwen' },
+const openrouterModels = [
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', tier: 'Fast' },
+  { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', tier: 'Smart' },
+  { id: 'anthropic/claude-sonnet-4', name: 'Claude Sonnet 4', provider: 'Anthropic', tier: 'Smart' },
+  { id: 'anthropic/claude-3.5-haiku', name: 'Claude 3.5 Haiku', provider: 'Anthropic', tier: 'Fast' },
+  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', tier: 'Fast' },
+  { id: 'meta-llama/llama-4-scout:free', name: 'Llama 4 Scout (Free)', provider: 'Meta', tier: 'Free' },
+  { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat', provider: 'DeepSeek', tier: 'Smart' },
 ];
 
 export default function SettingsPage() {
@@ -41,11 +43,11 @@ export default function SettingsPage() {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    // Load from localStorage
     try {
       const stored = localStorage.getItem('nemith_settings');
       if (stored) {
-        setSettings({ ...defaultSettings, ...JSON.parse(stored) });
+        const parsed = JSON.parse(stored);
+        setSettings({ ...defaultSettings, ...parsed });
       }
     } catch {}
   }, []);
@@ -83,7 +85,7 @@ export default function SettingsPage() {
       <div className="p-4 md:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto space-y-8">
 
-          {/* Model Selection */}
+          {/* OpenRouter Config */}
           <motion.section
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -91,39 +93,125 @@ export default function SettingsPage() {
           >
             <div className="flex items-center gap-2 mb-4">
               <Cpu className="w-4 h-4 text-white/40" />
-              <h2 className="text-sm font-medium text-white">Model</h2>
+              <h2 className="text-sm font-medium text-white">OpenRouter (Primary)</h2>
             </div>
-            <div className="space-y-1.5">
-              {popularModels.map((model) => (
-                <button
-                  key={model.id}
-                  onClick={() => updateSetting('model', model.id)}
-                  className={cn(
-                    'w-full flex items-center justify-between px-4 py-3 rounded-xl border text-sm transition-all',
-                    settings.model === model.id
-                      ? 'bg-white/[0.08] border-white/[0.15] text-white'
-                      : 'bg-[#111] border-white/[0.04] text-white/40 hover:border-white/[0.08] hover:text-white/60'
-                  )}
+
+            {/* API Key */}
+            <div className="bg-[#111] border border-white/[0.04] rounded-xl p-4 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-white/50">API Key</span>
+                <a
+                  href="https://openrouter.ai/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-[10px] text-white/20 hover:text-white/40 transition-colors"
                 >
-                  <span>{model.name}</span>
-                  <span className="text-xs text-white/20">{model.provider}</span>
+                  Get key <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+              <div className="relative">
+                <input
+                  type={showKeys.openrouterKey ? 'text' : 'password'}
+                  value={settings.openrouterKey}
+                  onChange={(e) => updateSetting('openrouterKey', e.target.value)}
+                  placeholder="sk-or-..."
+                  className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/[0.06] text-sm text-white/60 placeholder:text-white/15 outline-none focus:border-white/[0.12] transition-colors font-mono pr-16"
+                />
+                <button
+                  onClick={() => setShowKeys((prev) => ({ ...prev, openrouterKey: !prev.openrouterKey }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/20 hover:text-white/40 transition-colors px-1.5 py-0.5 rounded border border-white/[0.06]"
+                >
+                  {showKeys.openrouterKey ? 'Hide' : 'Show'}
                 </button>
-              ))}
+              </div>
             </div>
-            <div className="mt-3">
+
+            {/* Model */}
+            <div className="bg-[#111] border border-white/[0.04] rounded-xl p-4">
+              <span className="text-sm text-white/50 mb-3 block">Model</span>
+              <div className="space-y-1.5">
+                {openrouterModels.map((model) => (
+                  <button
+                    key={model.id}
+                    onClick={() => updateSetting('openrouterModel', model.id)}
+                    className={cn(
+                      'w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm transition-all',
+                      settings.openrouterModel === model.id
+                        ? 'bg-white/[0.08] border-white/[0.15] text-white'
+                        : 'bg-transparent border-white/[0.04] text-white/40 hover:border-white/[0.08] hover:text-white/60'
+                    )}
+                  >
+                    <span>{model.name}</span>
+                    <span className="text-xs text-white/20">{model.provider} · {model.tier}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3">
+                <input
+                  type="text"
+                  value={settings.openrouterModel}
+                  onChange={(e) => updateSetting('openrouterModel', e.target.value)}
+                  placeholder="Custom model ID..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/[0.06] text-sm text-white/60 placeholder:text-white/20 outline-none focus:border-white/[0.12] transition-colors font-mono"
+                />
+                <p className="text-[10px] text-white/15 mt-1.5 px-1">
+                  Or type a custom model from{' '}
+                  <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-white/50 underline">
+                    openrouter.ai/models
+                  </a>
+                </p>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Gemini Fallback */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Key className="w-4 h-4 text-blue-400/60" />
+              <h2 className="text-sm font-medium text-white">Gemini (Fallback)</h2>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400/60 border border-blue-500/20">Auto on 429</span>
+            </div>
+            <div className="bg-[#111] border border-white/[0.04] rounded-xl p-4 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-white/50">API Key</span>
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-[10px] text-white/20 hover:text-white/40 transition-colors"
+                >
+                  Get key <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+              <div className="relative">
+                <input
+                  type={showKeys.geminiKey ? 'text' : 'password'}
+                  value={settings.geminiKey}
+                  onChange={(e) => updateSetting('geminiKey', e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/[0.06] text-sm text-white/60 placeholder:text-white/15 outline-none focus:border-white/[0.12] transition-colors font-mono pr-16"
+                />
+                <button
+                  onClick={() => setShowKeys((prev) => ({ ...prev, geminiKey: !prev.geminiKey }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/20 hover:text-white/40 transition-colors px-1.5 py-0.5 rounded border border-white/[0.06]"
+                >
+                  {showKeys.geminiKey ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+            <div className="bg-[#111] border border-white/[0.04] rounded-xl p-4">
+              <span className="text-sm text-white/50 mb-2 block">Model</span>
               <input
                 type="text"
-                value={settings.model}
-                onChange={(e) => updateSetting('model', e.target.value)}
-                placeholder="Custom model ID..."
-                className="w-full px-4 py-2.5 rounded-xl bg-[#111] border border-white/[0.04] text-sm text-white/60 placeholder:text-white/20 outline-none focus:border-white/[0.12] transition-colors font-mono"
+                value={settings.geminiModel}
+                onChange={(e) => updateSetting('geminiModel', e.target.value)}
+                placeholder="gemini-3.8-flash"
+                className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/[0.06] text-sm text-white/60 placeholder:text-white/15 outline-none focus:border-white/[0.12] transition-colors font-mono"
               />
-              <p className="text-[10px] text-white/15 mt-1.5 px-1">
-                Or type a custom model ID from{' '}
-                <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-white/50 underline">
-                  openrouter.ai/models
-                </a>
-              </p>
             </div>
           </motion.section>
 
@@ -131,14 +219,13 @@ export default function SettingsPage() {
           <motion.section
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.05 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
           >
             <div className="flex items-center gap-2 mb-4">
               <Thermometer className="w-4 h-4 text-white/40" />
               <h2 className="text-sm font-medium text-white">Parameters</h2>
             </div>
             <div className="space-y-4">
-              {/* Temperature */}
               <div className="bg-[#111] border border-white/[0.04] rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-white/50">Temperature</span>
@@ -159,7 +246,6 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Max Tokens */}
               <div className="bg-[#111] border border-white/[0.04] rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-white/50">Max Tokens</span>
@@ -182,30 +268,24 @@ export default function SettingsPage() {
             </div>
           </motion.section>
 
-          {/* API Keys */}
+          {/* Other API Keys */}
           <motion.section
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
           >
             <div className="flex items-center gap-2 mb-4">
               <Key className="w-4 h-4 text-white/40" />
-              <h2 className="text-sm font-medium text-white">API Keys</h2>
+              <h2 className="text-sm font-medium text-white">Other Keys</h2>
             </div>
             <div className="space-y-3">
               {[
-                { key: 'openrouterKey' as const, label: 'OpenRouter API Key', placeholder: 'sk-or-...', link: 'https://openrouter.ai/keys', required: true },
-                { key: 'serperKey' as const, label: 'Serper API Key', placeholder: '...', link: 'https://serper.dev/', required: false },
-                { key: 'githubToken' as const, label: 'GitHub Token', placeholder: 'ghp_...', link: 'https://github.com/settings/tokens', required: false },
+                { key: 'serperKey' as const, label: 'Serper API Key (Web Search)', placeholder: '...', link: 'https://serper.dev/' },
+                { key: 'githubToken' as const, label: 'GitHub Token (Read-only)', placeholder: 'ghp_...', link: 'https://github.com/settings/tokens' },
               ].map((apiKey) => (
                 <div key={apiKey.key} className="bg-[#111] border border-white/[0.04] rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-white/50">{apiKey.label}</span>
-                      {apiKey.required && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] text-white/30">Required</span>
-                      )}
-                    </div>
+                    <span className="text-sm text-white/50">{apiKey.label}</span>
                     <a
                       href={apiKey.link}
                       target="_blank"
@@ -234,6 +314,7 @@ export default function SettingsPage() {
               ))}
             </div>
           </motion.section>
+
         </div>
       </div>
     </div>
